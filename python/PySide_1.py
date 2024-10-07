@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# /home/tomash/poks/prog/python/GUI/.venv/bin/python
-
 import sys
 #from PySide2 import QtGui,QtCore,QtQuick
 #from PySide2.QtWidgets import QApplication,QWidget,QLabel
