@@ -68,10 +68,24 @@ jobs:
           name: windows-build
           path: ./dist
 
-      - name: Archive build output (macOS)
-        if: runner.os == 'macOS'
+      - name: Archive build output (macOS latest)
+        if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: macos-build
+          name: macos-latest-build
+          path: ./dist
+
+      - name: Archive build output (macOS 15)
+        if: matrix.os == 'macos-15'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-15-build
+          path: ./dist
+
+      - name: Archive build output (macOS 15 arm64)
+        if: matrix.os == 'macos-15-arm64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-15-arm64-build
           path: ./dist
 
