@@ -19,7 +19,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.8'
 
       - name: Install packages
         if: runner.os == 'Linux'
@@ -38,8 +38,8 @@ jobs:
         run: |
           PYLIBS=$(python -c 'import site; print(site.getsitepackages()[0])')
           echo "PYLIBS: ${PYLIBS}"
-          mv ./python/PySide_1.py ./python/PySide_1.pyw
-          pyinstaller --noconsole  --onefile --paths=${PYLIBS} ./python/PySide_1.pyw
+          mv ./python/PySide_test_1.py ./python/PySide_test_1.pyw
+          pyinstaller --noconsole  --onefile --paths=${PYLIBS} ./python/PySide_test_1.pyw
         shell: bash
 
       - name: Build executable for Linux and MacOS
@@ -48,10 +48,10 @@ jobs:
           PYLIBS=$(python -c 'import site; print(site.getsitepackages()[0])')
           echo "PYLIBS: ${PYLIBS}"
           #pyinstaller --onefile --windowed your_script.py
-          #pyinstaller --onefile --paths=${PYLIBS} ./python/PySimpleGUI_1.py
-          pyinstaller --noconsole --onefile --paths=${PYLIBS} ./python/PySide_1.py
-          #pyinstaller --onefile --paths=${PYLIBS} ./python/wxPython_1.py
-          #pyinstaller --onefile --paths=${PYLIBS} ./python/wxPython_2.py
+          #pyinstaller --onefile --paths=${PYLIBS} ./python/PySimpleGUI_test_1.py
+          pyinstaller --noconsole --onefile --paths=${PYLIBS} ./python/PySide_test_1.py
+          #pyinstaller --onefile --paths=${PYLIBS} ./python/wxPython_test_1.py
+          #pyinstaller --onefile --paths=${PYLIBS} ./python/wxPython_test_2.py
         shell: bash
 
       - name: Archive build output (Linux)
