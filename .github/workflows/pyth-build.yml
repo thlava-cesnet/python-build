@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         #os: [ubuntu-latest, macos-latest, windows-latest]
-        os: [ubuntu-latest, macos-latest, macos-15, macos-15-arm64, windows-latest]
+        os: [ubuntu-latest, macos-latest, macos-15, windows-latest]
         #os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
 
@@ -81,11 +81,3 @@ jobs:
         with:
           name: macos-15-build
           path: ./dist
-
-      - name: Archive build output (macOS 15 arm64)
-        if: matrix.os == 'macos-15-arm64'
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-15-arm64-build
-          path: ./dist
-
