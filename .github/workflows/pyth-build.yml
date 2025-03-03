@@ -15,6 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       SCRIPT_NAME: "rclone_pygui"
+      RUNNER: ${{ runner.os }}
 
     steps:
       - name: Checkout repository
@@ -46,7 +47,7 @@ jobs:
           mv ./${SCRIPT_NAME}.py ./${SCRIPT_NAME}.pyw
           #pyinstaller --noconsole  --onefile --paths=${PYLIBS} --add-data "./images/spinner.gif:./images" ./python/${SCRIPT_NAME}.pyw
           pyinstaller --noconsole  --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.pyw
-          ./dist/${SCRIPT_NAME}.exe --help
+          ./run_tests.sh
         shell: bash
 
       - name: Build executable for Linux and MacOS
@@ -60,6 +61,7 @@ jobs:
           #pyinstaller --noconsole --onefile --paths=${PYLIBS} --add-data "./images/spinner.gif:./images" ./python/${SCRIPT_NAME}.py
           pyinstaller --noconsole --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.py
           #pyinstaller --onefile --paths=${PYLIBS} ./python/wxPython_test_2.py
+          ./run_tests.sh
         shell: bash
 
       - name: Archive build output (Linux)

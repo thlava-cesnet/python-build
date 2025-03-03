@@ -13,7 +13,10 @@ set -e
 
 cd dist
 
-echo -ne "   test: rclone_pygui --help\r"
+echo "runner: $RUNNER"
+if [[ "$RUNNER" == "Windows" ]]; then SCRIPT_NAME="${SCRIPT_NAME}.exe"; fi
+
+echo -ne "   test: ${SCRIPT_NAME} --help\r"
 read -r -d '' GOLDEN <<- EOT || /bin/true
 usage: rclone_pygui [-h] [-d] [-c RCLONE_CONFIG] [-r RCLONE_COMMAND] [-p]
 
@@ -30,19 +33,19 @@ optional arguments:
                         run as rclone password command, for internal use
 EOT
 #echo ">$GOLDEN<"
-OUT="$(./rclone_pygui --help)"
+OUT="$(./${SCRIPT_NAME} --help)"
 #echo ">$OUT<"
 diff <(echo "$GOLDEN"| tr -d '\n\t ') <(echo "$OUT" | tr -d '\n\t ')
 echo "OK"
 
-echo -ne "   test: rclone_pygui --password_command 0\r"
+echo -ne "   test: ${SCRIPT_NAME} --password_command 0\r"
 GOLDEN="abc"
-OUT="$(PYGUI_RCLONE_OLDPW=abc PYGUI_RCLONE_NEWPW=def RCLONE_PASSWORD_CHANGE=0 ./rclone_pygui --password_command)"
+OUT="$(PYGUI_RCLONE_OLDPW=abc PYGUI_RCLONE_NEWPW=def RCLONE_PASSWORD_CHANGE=0 ./${SCRIPT_NAME} --password_command)"
 diff <(echo "$GOLDEN") <(echo "$OUT")
 echo "OK"
 
-echo -ne "   test: rclone_pygui --password_command 1\r"
+echo -ne "   test: ${SCRIPT_NAME} --password_command 1\r"
 GOLDEN="def"
-OUT="$(PYGUI_RCLONE_OLDPW=abc PYGUI_RCLONE_NEWPW=def RCLONE_PASSWORD_CHANGE=1 ./rclone_pygui --password_command)"
+OUT="$(PYGUI_RCLONE_OLDPW=abc PYGUI_RCLONE_NEWPW=def RCLONE_PASSWORD_CHANGE=1 ./${SCRIPT_NAME} --password_command)"
 diff <(echo "$GOLDEN") <(echo "$OUT")
 echo "OK"
