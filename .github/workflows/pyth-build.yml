@@ -15,7 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       SCRIPT_NAME: "rclone_pygui"
-      RUNNER: ${{ runner.os }}
+      RUNNER: runner.os
 
     steps:
       - name: Checkout repository
