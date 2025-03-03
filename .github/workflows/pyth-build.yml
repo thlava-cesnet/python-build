@@ -64,7 +64,10 @@ jobs:
 
       - name: run_tests.sh
         run: |
+          ls -la
+          ls -la dist
           ./run_tests.sh
+        shell: bash
 
       - name: Archive build output (Linux)
         if: runner.os == 'Linux'
