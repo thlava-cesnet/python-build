@@ -12,6 +12,8 @@ jobs:
         os: [ubuntu-latest, macos-latest, macos-15, windows-latest]
         #os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      SCRIPT_NAME: "rclone_pygui"
 
     steps:
       - name: Checkout repository
@@ -39,8 +41,8 @@ jobs:
         run: |
           PYLIBS=$(python -c 'import site; print(site.getsitepackages()[0])')
           echo "PYLIBS: ${PYLIBS}"
-          mv ./python/PySide_test_2.py ./python/PySide_test_2.pyw
-          pyinstaller --noconsole  --onefile --paths=${PYLIBS} ./python/PySide_test_2.pyw
+          mv ./python/${SCRIPT_NAME}.py ./python/${SCRIPT_NAME}.pyw
+          pyinstaller --noconsole  --onefile --paths=${PYLIBS} --add-data "./images/spinner.gif:./images" ./python/${SCRIPT_NAME}.pyw
         shell: bash
 
       - name: Build executable for Linux and MacOS
@@ -50,7 +52,7 @@ jobs:
           echo "PYLIBS: ${PYLIBS}"
           #pyinstaller --onefile --windowed your_script.py
           #pyinstaller --onefile --paths=${PYLIBS} ./python/PySimpleGUI_test_1.py
-          pyinstaller --noconsole --onefile --paths=${PYLIBS} ./python/PySide_test_2.py
+          pyinstaller --noconsole --onefile --paths=${PYLIBS} --add-data "./images/spinner.gif:./images" ./python/${SCRIPT_NAME}.py
           #pyinstaller --onefile --paths=${PYLIBS} ./python/wxPython_test_2.py
         shell: bash
 
