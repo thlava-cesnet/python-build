@@ -17,7 +17,8 @@ echo "runner: $RUNNER"
 if [[ "$RUNNER" == "Windows" ]]; then SCRIPT_NAME="${SCRIPT_NAME}.exe"; fi
 
 echo -ne "   test: ${SCRIPT_NAME} --help\r"
-read -r -d '' GOLDEN <<- EOT || /bin/true
+set +e
+read -r -d '' GOLDEN <<- EOT
 usage: rclone_pygui [-h] [-d] [-c RCLONE_CONFIG] [-r RCLONE_COMMAND] [-p]
 
 CESNET S3 rclone pygui
@@ -32,6 +33,7 @@ optional arguments:
   -p, --password_command
                         run as rclone password command, for internal use
 EOT
+set -e
 #echo ">$GOLDEN<"
 OUT="$(./${SCRIPT_NAME} --help)"
 #echo ">$OUT<"
