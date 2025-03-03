@@ -37,7 +37,7 @@ set -e
 #echo ">$GOLDEN<"
 OUT="$(./${SCRIPT_NAME} --help)"
 #echo ">$OUT<"
-diff <(echo "$GOLDEN"| tr -d '\n\t ') <(echo "$OUT" | tr -d '\n\t ')
+diff <(echo "$GOLDEN"| sed 's/optional arguments/options/' | tr '\n\t' '  ' | tr -s ' ') <(echo "$OUT" | sed 's/optional arguments/options/' | tr '\n\t' '  ' | tr -s ' ')
 echo "OK"
 
 echo -ne "   test: ${SCRIPT_NAME} --password_command 0\r"
