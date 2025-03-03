@@ -39,20 +39,24 @@ jobs:
       - name: Build executable for Windows
         if: runner.os == 'Windows'
         run: |
-          PYLIBS=$(python -c 'import site; print(site.getsitepackages()[0])')
-          echo "PYLIBS: ${PYLIBS}"
-          mv ./python/${SCRIPT_NAME}.py ./python/${SCRIPT_NAME}.pyw
-          pyinstaller --noconsole  --onefile --paths=${PYLIBS} --add-data "./images/spinner.gif:./images" ./python/${SCRIPT_NAME}.pyw
+          #PYLIBS=$(python -c 'import site; print(site.getsitepackages()[0])')
+          #echo "PYLIBS: ${PYLIBS}"
+          cd python
+          mv ./${SCRIPT_NAME}.py ./${SCRIPT_NAME}.pyw
+          #pyinstaller --noconsole  --onefile --paths=${PYLIBS} --add-data "./images/spinner.gif:./images" ./python/${SCRIPT_NAME}.pyw
+          pyinstaller --noconsole  --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.pyw
         shell: bash
 
       - name: Build executable for Linux and MacOS
         if: runner.os != 'Windows'
         run: |
-          PYLIBS=$(python -c 'import site; print(site.getsitepackages()[0])')
-          echo "PYLIBS: ${PYLIBS}"
+          #PYLIBS=$(python -c 'import site; print(site.getsitepackages()[0])')
+          #echo "PYLIBS: ${PYLIBS}"
+          cd python
           #pyinstaller --onefile --windowed your_script.py
           #pyinstaller --onefile --paths=${PYLIBS} ./python/PySimpleGUI_test_1.py
-          pyinstaller --noconsole --onefile --paths=${PYLIBS} --add-data "./images/spinner.gif:./images" ./python/${SCRIPT_NAME}.py
+          #pyinstaller --noconsole --onefile --paths=${PYLIBS} --add-data "./images/spinner.gif:./images" ./python/${SCRIPT_NAME}.py
+          pyinstaller --noconsole --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.py
           #pyinstaller --onefile --paths=${PYLIBS} ./python/wxPython_test_2.py
         shell: bash
 
@@ -61,25 +65,25 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: ./dist
+          path: ./python/dist
 
       - name: Archive build output (Windows)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: ./dist
+          path: ./python/dist
 
       - name: Archive build output (macOS latest)
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v4
         with:
           name: macos-latest-build
-          path: ./dist
+          path: ./python/dist
 
       - name: Archive build output (macOS 15)
         if: matrix.os == 'macos-15'
         uses: actions/upload-artifact@v4
         with:
           name: macos-15-build
-          path: ./dist
+          path: ./python/dist
