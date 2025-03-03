@@ -11,7 +11,7 @@ set -e
 #cd tests
 #pytest -v -x
 
-cd dist
+cd python/dist
 
 echo "runner: $RUNNER"
 if [[ "$RUNNER" == "Windows" ]]; then SCRIPT_NAME="${SCRIPT_NAME}.exe"; fi
