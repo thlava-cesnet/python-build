@@ -59,7 +59,7 @@ jobs:
         run: |
           cd python
           # --target-architecture x86_64, arm64, universal2
-          pyinstaller --noconsole --onefile --target-architecture x86_64 --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.py
+          pyinstaller --noconsole --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.py
         shell: bash
 
       - name: run_tests.sh
