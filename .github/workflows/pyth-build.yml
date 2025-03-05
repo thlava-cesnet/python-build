@@ -11,7 +11,7 @@ jobs:
         #os: [ubuntu-latest, macos-latest, windows-latest]
         #os: [ubuntu-latest, macos-latest, macos-15, windows-latest]
         #os: [ubuntu-22.04, macos-latest, macos-15, windows-latest]
-        os: [ubuntu-20.04, ubuntu-22.04, macos-latest, macos-15, windows-latest]
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest, windows-latest]
         #os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     env:
@@ -70,15 +70,15 @@ jobs:
           ./run_tests.sh
         shell: bash
 
-      - name: Archive build output (Linux)
-        if: runner.os == 'Linux'
+      - name: Archive build output (Linux ${{ matrix.os }})
+        if: runer.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
-          name: linux-build
+          name: linux-${{ matrix.os }}-build
           path: ./python/dist
 
       - name: Archive build output (Windows)
-        if: runner.os == 'Windows'
+        if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
