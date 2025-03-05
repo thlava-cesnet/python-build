@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2025 CESNET
+#
+# bucket_sak is free software; you can redistribute it and/or modify
+# it under the terms of the MIT License; see LICENSE file for more details.
+
+""" S3 rclone pygui """
 
 import sys, os, json, shutil
 # aux
@@ -94,16 +102,25 @@ class MainWidget(QWidget):
         self.window = window
         self.state = States.INIT
         self.profile = None
+        if not (rclone := shutil.which(args.rclone_command)):
+            Warning(title="Warning", text="Rclone command not found.", icon=QMessageBox.Warning).exec()
+            fatal_err(f"Rclone command \"{args.rclone_command}\" not found.")
+        self.rclone_command = rclone
+        print(f"Using rclone command \"{rclone}\"")
         self.prepareGUI()
+        if self.config_file == '':
+            Warning(title="Warning", text="Rclone config not specified (or not found)\n- select it, please, in next step.", icon=QMessageBox.Warning).exec()
+            self._open_dialog()
 
     def prepareGUI(self):
         #
+        rclone_label = QLabel(f"Rclone Command: {self.rclone_command}")
         self.gbox_old_pw = self._create_old_password_box()
         gbox_remote_config = self._create_remote_config_box()
         gbox_new_pw = self._create_new_password_box()
         #
         win_layout = QVBoxLayout()
-        for gbox in (self.gbox_old_pw, gbox_remote_config, gbox_new_pw):
+        for gbox in (rclone_label, self.gbox_old_pw, gbox_remote_config, gbox_new_pw):
             win_layout.addWidget(gbox)
         self.setLayout(win_layout)
         self.transition_to_state_INIT()
@@ -302,7 +319,7 @@ class MainWidget(QWidget):
     def rclone_config_check(self, config_pw):
         if self.debug: print(f"call rclone config dump")
         (st, err, out) = subprocess_call(
-            self.rclone_command, ['--config', self.config_file, '--ask-password=false', 'config', 'dump'],
+            self.rclone_command, ['--no-console', '--config', self.config_file, '--ask-password=false', 'config', 'dump'],
             self.debug,
             { 'RCLONE_CONFIG_PASS': config_pw }
         )
@@ -320,6 +337,7 @@ class MainWidget(QWidget):
         if self.debug: print(f"call rclone config encryption set")
         (st, err, out) = subprocess_call(
             self.rclone_command, [
+                '--no-console',
                 '--config', self.config_file, 'config', 'encryption', 'set', '--ask-password=false',
                 '--password-command', f"{self.rclone_pygui_command} --password_command"
             ],
@@ -343,7 +361,7 @@ class MainWidget(QWidget):
                     options[opt]['updated'] = True
             if self.debug: print(f"call rclone w.nextarg: {nextarg}")
             (st, err, out) = subprocess_call(
-                self.rclone_command, ['--config', self.config_file, 'config', 'update', '--non-interactive', self.remote_name, '--continue'] + [nextarg],
+                self.rclone_command, ['--no-console', '--config', self.config_file, 'config', 'update', '--non-interactive', self.remote_name, '--continue'] + [nextarg],
                 self.debug,
                 { 'RCLONE_CONFIG_PASS': config_pw, 'RCLONE_RESULT': rcresult }
             )
@@ -365,7 +383,7 @@ class MainWidget(QWidget):
         self.window.quit()
 
 def subprocess_call(cmd, cmd_args, debug, env=None):
-    wait_timeout_s = 6
+    wait_timeout_s = 10
     proc = None
     try:
         if debug: print(f"subprocess call: {cmd} {cmd_args=} {env=}")
@@ -400,7 +418,7 @@ def fatal_err(msg, status=1):
 def parse_args(argv):
     p = ArgumentParser(description="CESNET S3 rclone pygui")
     p.add_argument("-d", "--debug", help="enable debug outputs (default %(default)s)", action="store_true")
-    p.add_argument("-c", "--rclone_config", help="rclone config file (default: %(default)s)", default='./rclone.conf')
+    p.add_argument("-c", "--rclone_config", help="rclone config file (default: %(default)s)", default='')
     p.add_argument("-r", "--rclone_command", help="rclone command, could be full path to command (default: %(default)s)", default='rclone')
     p.add_argument("-p", "--password_command", action="store_true", help="run as rclone password command, for internal use")
     return p.parse_args(argv)
@@ -416,9 +434,7 @@ def main(argv = None):
         else:
             print(subproc_pw_new)
     else:
-        if not os.path.isfile(args.rclone_config): fatal_err(f"Rclone config \"{args.rclone_config}\" not found.")
-        if not (rclone := shutil.which(args.rclone_command)): fatal_err(f"Rclone command \"{args.rclone_command}\" not found.")
-        print(f"Using rclone command \"{rclone}\"")
+        if not os.path.isfile(args.rclone_config): args.rclone_config = ''
 # ***
 #        rclone_version = get_rclone_version(rclone, args.debug)
 #        print(f"rclone version: {rclone_version}")
