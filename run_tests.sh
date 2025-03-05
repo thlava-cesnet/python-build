@@ -27,7 +27,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -d, --debug           enable debug outputs (default False)
   -c RCLONE_CONFIG, --rclone_config RCLONE_CONFIG
-                        rclone config file (default: ./rclone.conf)
+                        rclone config file (default: )
   -r RCLONE_COMMAND, --rclone_command RCLONE_COMMAND
                         rclone command, could be full path to command (default: rclone)
   -p, --password_command
