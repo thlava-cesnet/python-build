@@ -11,7 +11,7 @@ jobs:
         #os: [ubuntu-latest, macos-latest, windows-latest]
         #os: [ubuntu-latest, macos-latest, macos-15, windows-latest]
         #os: [ubuntu-22.04, macos-latest, macos-15, windows-latest]
-        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest, windows-latest]
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, macos-13, windows-latest]
         #os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     env:
@@ -41,26 +41,25 @@ jobs:
       - name: Build executable for Windows
         if: runner.os == 'Windows'
         run: |
-          #PYLIBS=$(python -c 'import site; print(site.getsitepackages()[0])')
-          #echo "PYLIBS: ${PYLIBS}"
           cd python
           mv ./${SCRIPT_NAME}.py ./${SCRIPT_NAME}.pyw
-          #pyinstaller --noconsole  --onefile --paths=${PYLIBS} --add-data "./images/spinner.gif:./images" ./python/${SCRIPT_NAME}.pyw
           #pyinstaller --noconsole  --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.pyw
           pyinstaller --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.pyw
         shell: bash
 
-      - name: Build executable for Linux and MacOS
-        if: runner.os != 'Windows'
+      - name: Build executable for Linux
+        if: runner.os == 'Linux'
         run: |
-          #PYLIBS=$(python -c 'import site; print(site.getsitepackages()[0])')
-          #echo "PYLIBS: ${PYLIBS}"
           cd python
-          #pyinstaller --onefile --windowed your_script.py
-          #pyinstaller --onefile --paths=${PYLIBS} ./python/PySimpleGUI_test_1.py
-          #pyinstaller --noconsole --onefile --paths=${PYLIBS} --add-data "./images/spinner.gif:./images" ./python/${SCRIPT_NAME}.py
           pyinstaller --noconsole --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.py
-          #pyinstaller --onefile --paths=${PYLIBS} ./python/wxPython_test_2.py
+        shell: bash
+
+      - name: Build executable for MacOS
+        if: runner.os == 'macOS'
+        run: |
+          cd python
+          # --target-architecture x86_64, arm64, universal2
+          pyinstaller --noconsole --onefile --target-architecture x86_64 --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.py
         shell: bash
 
       - name: run_tests.sh
