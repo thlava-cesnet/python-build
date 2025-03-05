@@ -69,30 +69,23 @@ jobs:
           ./run_tests.sh
         shell: bash
 
-      - name: Archive build output (Linux ${{ matrix.os }})
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-${{ matrix.os }}-build
-          path: ./python/dist
-
-      - name: Archive build output (Windows)
+      - name: Build artifact for Windows
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
           path: ./python/dist
 
-      - name: Archive build output (macOS latest)
-        if: matrix.os == 'macos-latest'
+      - name: Build artifact for Linux (${{ matrix.os }})
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
-          name: macos-latest-build
+          name: linux-${{ matrix.os }}-build
           path: ./python/dist
 
-      - name: Archive build output (macOS 15)
-        if: matrix.os == 'macos-15'
+      - name: Build artifact for MacOS (${{ matrix.os }})
+        if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: macos-15-build
+          name: linux-${{ matrix.os }}-build
           path: ./python/dist
