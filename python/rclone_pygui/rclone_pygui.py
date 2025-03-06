@@ -14,7 +14,7 @@ import time
 from PySide6.QtWidgets import QWidget, QApplication, QGroupBox, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QFormLayout, QStyle, QMainWindow, QFileDialog, QMessageBox
 from PySide6.QtGui import QAction, QRegularExpressionValidator, QMovie
 from PySide6.QtCore import QTimer, QByteArray, Qt, QThread, Signal
-from subprocess import PIPE, TimeoutExpired, Popen
+import subprocess as sp
 from argparse import ArgumentParser
 from types import SimpleNamespace
 from enum import Enum
@@ -59,8 +59,6 @@ class MainWindow(QMainWindow):
         about_text = f"""
         S3 rclone pygui (c) 2025 CESNET
         {platform.system()}; {platform.machine()}
-        {platform.win32_ver()}; {platform.win32_edition()}
-        {platform.mac_ver()}
         """
         about_action.triggered.connect(lambda : Warning(text=about_text).exec())
 
@@ -423,14 +421,26 @@ def subprocess_call(cmd, cmd_args, debug, env=None):
         if debug: print(f"subprocess call: {cmd} {cmd_args=} {env=}")
         env_copy = os.environ.copy()
         if env != None: env_copy.update(env)
-        proc = Popen([cmd] + cmd_args, stdin=PIPE, stdout=PIPE, stderr=PIPE, text=True, env=env_copy, start_new_session=True)
+        kwargs = {}
+        if platform.system() == "Windows":
+            si = sp.STARTUPINFO()
+            si.dwFlags |= sp.STARTF_USESHOWWINDOW
+            si.wShowWindow = 7 # SW_SHOWMINNOACTIVE
+            kwargs['creationflags'] = sp.DETACHED_PROCESS
+            kwargs['startupinfo'] = si
+            kwargs['capture_output'] = True
+        proc = sp.Popen([cmd] + cmd_args,
+            stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE, text=True,
+            env=env_copy, start_new_session=True,
+            **kwargs
+        )
         proc.wait(timeout = wait_timeout_s)
         out = proc.stdout.read()
         err = proc.stderr.read()
         if debug: print(out, err)
         status = proc.returncode
         return (status, err, out)
-    except TimeoutExpired as e:
+    except sp.TimeoutExpired as e:
         status, err = 255, 'timeout'
         return (status, err, '')
     finally:
