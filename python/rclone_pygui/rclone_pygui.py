@@ -428,7 +428,7 @@ def subprocess_call(cmd, cmd_args, debug, env=None):
             si.wShowWindow = 7 # SW_SHOWMINNOACTIVE
             kwargs['creationflags'] = sp.DETACHED_PROCESS
             kwargs['startupinfo'] = si
-            kwargs['capture_output'] = True
+            #kwargs['capture_output'] = True
         proc = sp.Popen([cmd] + cmd_args,
             stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE, text=True,
             env=env_copy, start_new_session=True,
