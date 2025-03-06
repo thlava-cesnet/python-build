@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
         self.app.quit()
 
 class States(Enum):
-    INIT, PWOK, BOTO, FIN = range(1,5)
+    INIT, CONF, PWOK, BOTO, FIN = range(1,6)
     def __str__(self): return f"{self.name}"
     def debug(self): return f"{self.name}[{self.value}]"
     @classmethod
@@ -91,8 +91,9 @@ class MainWidget(QWidget):
     def __init__(self, window, args):
         super(MainWidget, self).__init__()
         self.debug = args.debug
-        self.config_file = args.rclone_config
+        self.rclone_config = args.rclone_config
         self.rclone_command = args.rclone_command
+        self.rclone_version = None
         self.rclone_pygui_command = sys.argv[0]
         #
         self.remote_name = "not selected"
@@ -106,15 +107,20 @@ class MainWidget(QWidget):
             Warning(title="Warning", text="Rclone command not found.", icon=QMessageBox.Warning).exec()
             fatal_err(f"Rclone command \"{args.rclone_command}\" not found.")
         self.rclone_command = rclone
-        print(f"Using rclone command \"{rclone}\"")
+        if self.debug: print(f"Using rclone command \"{rclone}\"")
+        # ***
+        self.rclone_version = get_rclone_version(rclone, self.debug)
+        if self.debug: print(f"rclone version: {self.rclone_version}")
         self.prepareGUI()
-        if self.config_file == '':
+        if self.rclone_config == '' or not os.path.isfile(self.rclone_config):
             Warning(title="Warning", text="Rclone config not specified (or not found)\n- select it, please, in next step.", icon=QMessageBox.Warning).exec()
             self._open_dialog()
+        else: self.transition_to_state_CONF()
 
     def prepareGUI(self):
         #
-        rclone_label = QLabel(f"Rclone Command: {self.rclone_command}")
+        ver = f"({self.rclone_version})" if self.rclone_version else ''
+        rclone_label = QLabel(f"Rclone Command: {self.rclone_command} {ver}")
         self.gbox_old_pw = self._create_old_password_box()
         gbox_remote_config = self._create_remote_config_box()
         gbox_new_pw = self._create_new_password_box()
@@ -129,16 +135,16 @@ class MainWidget(QWidget):
         selected_config,_ = QFileDialog.getOpenFileName(self, 'Select rclone config ...', '.', "configs (*.conf)")
         if not selected_config: return
         if self.debug: print(f"Selected config file: {selected_config}")
-        self.config_file = os.path.relpath(selected_config)
-        self.gbox_old_pw.setTitle(f"Config File: {self.config_file}")
-        self.transition_to_state_INIT()
+        self.rclone_config = os.path.relpath(selected_config)
+        self.gbox_old_pw.setTitle(f"Config File: {self.rclone_config}")
+        self.transition_to_state_CONF()
 
     def _switch_widgets(self):
         if self.debug: print("MainWidget._switch_widgets")
         self.window.set_BotoWidget(self.profile)
 
     def _create_old_password_box(self):
-        gbox = QGroupBox(f"Config File: {self.config_file}", parent=self)
+        gbox = QGroupBox(f"Config File: {self.rclone_config}", parent=self)
         #
         label = QLabel("Password:")
         self.input_old_pw = QLineEdit("", parent=gbox)
@@ -223,7 +229,7 @@ class MainWidget(QWidget):
                 if self.widget.check: self.widget.transition_to_state_PWOK(self.widget.profile)
                 else:
                     Warning(title="Warning", text="Password check failed", icon=QMessageBox.Warning).exec()
-                    self.widget.transition_to_state_INIT()
+                    self.widget.transition_to_state_CONF()
             def th_error(self, errmsg):
                 self.widget.spinner_old_pw.hide()
                 Warning(title="Warning", text=errmsg, icon=QMessageBox.Warning).exec()
@@ -263,8 +269,29 @@ class MainWidget(QWidget):
         r = XThreaded(self)
 
     def transition_to_state_INIT(self):
+        target_state = States.INIT
+        if self.debug: print(f"transition to state {target_state}")
+        self.spinner_old_pw.hide()
+        self.input_old_pw.setText("")
+        self.input_old_pw.setEnabled(False)
+        self._set_button_icon(self.button_old_pw, 'SP_DialogCloseButton')
+        self.button_old_pw.setEnabled(False)
+        self.window.open_action.setEnabled(True)
+        self.window.config_action.setEnabled(False)
+        self.window.s3_action.setEnabled(False)
+        for key in ('endpoint', 'access_key_id', 'secret_access_key'):
+            getattr(self, f"input_{key}").setText("")
+            getattr(self, f"input_{key}").setEnabled(False)
+        self.input_new_pw.setEnabled(False)
+        self._set_button_icon(self.button_new_pw, 'SP_DialogCloseButton')
+        self.button_new_pw.setEnabled(False)
+        self.state = target_state
+        self.window._set_win_title(None, self.state)
+
+    def transition_to_state_CONF(self):
+        target_state = States.CONF
+        if self.debug: print(f"transition to state {target_state} {self.rclone_config=}")
         self.remote_name = "not selected"
-        if self.debug: print(f"transition to state INIT")
         self.gbox_remote_config.setTitle(f"Remote {self.remote_name}")
         self.spinner_old_pw.hide()
         self.input_old_pw.setText("")
@@ -283,12 +310,13 @@ class MainWidget(QWidget):
         self.input_new_pw.setEnabled(False)
         self._set_button_icon(self.button_new_pw, 'SP_DialogCloseButton')
         self.button_new_pw.setEnabled(False)
-        self.state = States.INIT
+        self.state = target_state
         self.window._set_win_title(None, self.state)
 
     def transition_to_state_PWOK(self, profile):
+        target_state = States.PWOK
         self.remote_name = profile['remote_name']
-        if self.debug: print(f"transition to state PWOK {profile['remote_name']=}")
+        if self.debug: print(f"transition to state {target_state} {profile['remote_name']=}")
         self.gbox_remote_config.setTitle(f"Remote {self.remote_name}")
         self.input_old_pw.setEnabled(False)
         self.spinner_old_pw.hide()
@@ -303,7 +331,7 @@ class MainWidget(QWidget):
         self.input_new_pw.setEnabled(True)
         self._set_button_icon(self.button_new_pw, 'SP_DialogApplyButton')
         self.button_new_pw.setEnabled(True)
-        self.state = States.PWOK
+        self.state = target_state
         self.window._set_win_title(None, self.state)
 
     def transition_to_state_BOTO(self):
@@ -319,7 +347,7 @@ class MainWidget(QWidget):
     def rclone_config_check(self, config_pw):
         if self.debug: print(f"call rclone config dump")
         (st, err, out) = subprocess_call(
-            self.rclone_command, ['--no-console', '--config', self.config_file, '--ask-password=false', 'config', 'dump'],
+            self.rclone_command, ['--no-console', '--config', self.rclone_config, '--ask-password=false', 'config', 'dump'],
             self.debug,
             { 'RCLONE_CONFIG_PASS': config_pw }
         )
@@ -338,7 +366,7 @@ class MainWidget(QWidget):
         (st, err, out) = subprocess_call(
             self.rclone_command, [
                 '--no-console',
-                '--config', self.config_file, 'config', 'encryption', 'set', '--ask-password=false',
+                '--config', self.rclone_config, 'config', 'encryption', 'set', '--ask-password=false',
                 '--password-command', f"{self.rclone_pygui_command} --password_command"
             ],
             self.debug,
@@ -361,7 +389,7 @@ class MainWidget(QWidget):
                     options[opt]['updated'] = True
             if self.debug: print(f"call rclone w.nextarg: {nextarg}")
             (st, err, out) = subprocess_call(
-                self.rclone_command, ['--no-console', '--config', self.config_file, 'config', 'update', '--non-interactive', self.remote_name, '--continue'] + [nextarg],
+                self.rclone_command, ['--no-console', '--config', self.rclone_config, 'config', 'update', '--non-interactive', self.remote_name, '--continue'] + [nextarg],
                 self.debug,
                 { 'RCLONE_CONFIG_PASS': config_pw, 'RCLONE_RESULT': rcresult }
             )
@@ -434,13 +462,7 @@ def main(argv = None):
         else:
             print(subproc_pw_new)
     else:
-        if not os.path.isfile(args.rclone_config): args.rclone_config = ''
-# ***
-#        rclone_version = get_rclone_version(rclone, args.debug)
-#        print(f"rclone version: {rclone_version}")
         MainWindow(QApplication(), args).run()
-#        MainWindow(QApplication(), args).show()
-#        QtAsyncio.run()
 
 if __name__ == '__main__':
     sys.exit(main())
