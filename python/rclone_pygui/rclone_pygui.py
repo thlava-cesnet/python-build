@@ -8,7 +8,7 @@
 
 """ S3 rclone pygui """
 
-import sys, os, json, shutil
+import sys, os, json, shutil, platform
 # aux
 import time
 from PySide6.QtWidgets import QWidget, QApplication, QGroupBox, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QFormLayout, QStyle, QMainWindow, QFileDialog, QMessageBox
@@ -56,7 +56,13 @@ class MainWindow(QMainWindow):
         # help menu:
         help_menu = self.menu_bar.addMenu('&Help')
         help_menu.addAction((about_action := QAction("&About", self)))
-        about_action.triggered.connect(lambda : Warning().exec())
+        about_text = f"""
+        S3 rclone pygui (c) 2025 CESNET
+        {platform.system()}; {platform.machine()}
+        {platform.win32_ver()}; {platform.win32_edition()}
+        {platform.mac_ver()}
+        """
+        about_action.triggered.connect(lambda : Warning(text=about_text).exec())
 
     def _set_win_title(self, tit=None, state=""):
         if not tit: tit = f"rclone_config_pygui [{state}]"
