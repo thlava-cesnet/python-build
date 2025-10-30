@@ -13,11 +13,13 @@ jobs:
         #os: [ubuntu-22.04, macos-latest, macos-15, windows-latest]
         #os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, macos-13, windows-latest]
         #os: [ubuntu-20.04, macos-13, windows-latest]
-        os: [ubuntu-22.04, ubuntu-24.04, windows-latest]
+        #os: [ubuntu-22.04, ubuntu-24.04, windows-latest]
+        os: [ubuntu-24.04, windows-latest]
         #os: [windows-latest]
     runs-on: ${{ matrix.os }}
     env:
       SCRIPT_NAME: "rclone_config"
+      SCRIPT_NAME2: "rclone_config_dpo"
 
     steps:
       - name: Checkout repository
@@ -45,7 +47,9 @@ jobs:
         run: |
           cd python
           mv ./${SCRIPT_NAME}.py ./${SCRIPT_NAME}.pyw
+          mv ./${SCRIPT_NAME2}.py ./${SCRIPT_NAME2}.pyw
           pyinstaller --noconsole --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.pyw
+          pyinstaller --noconsole --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME2}.pyw
         shell: bash
 
       - name: Build executable for Linux
@@ -53,6 +57,7 @@ jobs:
         run: |
           cd python
           pyinstaller --noconsole --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.py
+          pyinstaller --noconsole --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME2}.py
         shell: bash
 
       - name: Build executable for MacOS
@@ -61,6 +66,7 @@ jobs:
           cd python
           # --target-architecture x86_64, arm64, universal2
           pyinstaller --noconsole --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.py
+          pyinstaller --noconsole --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME2}.py
         shell: bash
 
       - name: run_tests.sh
