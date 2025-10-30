@@ -21,13 +21,13 @@ set +e
 read -r -d '' GOLDEN <<- EOT
 usage: ${SCRIPT_NAME} [-h] [-d] [-c RCLONE_CONFIG] [-r RCLONE_COMMAND] [-p]
 
-CESNET S3 rclone pygui
+CESNET S3 rclone GUI config for users
 
 optional arguments:
   -h, --help            show this help message and exit
   -d, --debug           enable debug outputs (default False)
   -c RCLONE_CONFIG, --rclone_config RCLONE_CONFIG
-                        rclone config file (default: )
+                        rclone config file (default: None)
   -r RCLONE_COMMAND, --rclone_command RCLONE_COMMAND
                         rclone command, could be full path to command (default: rclone)
   -p, --password_command
