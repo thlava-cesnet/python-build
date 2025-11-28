@@ -172,7 +172,8 @@ class Rclone_control():
         if st == 0: return out.split("\n")[0].replace('rclone ', '')
         else: raise Exception(f"Rclone not found ({err=})")
 
-    def test_rcd(self, debug=False, env=None):
+    def test_rcd(self, debug=False, env=None, enc_profile=None):
+        WarningQD(title="Warning", text="test_rcd", icon=QMessageBox.Warning).exec()
         print("=== test_rcd: start")
         wait_timeout_s = 2
         proc = None
@@ -206,7 +207,7 @@ class Rclone_control():
             sock = requests_unixsocket.Session()
 #            time.sleep(1)
 #            resp = sock.post("http+unix://sock/rc/noop", auth=('user1','abcd'), json={"name":"prn_enc"})
-            resp = sock.post(f"http+unix://{sockfile}/config/get", auth=('user1','abcd'), json={"name":"prn_enc"})
+            resp = sock.post(f"http+unix://{sockfile}/config/get", auth=('user1','abcd'), json={"name":enc_profile})
 #            resp = sock.post("http+unix://sock/config/update", auth=('user1','abcd'), json={"name":"prn_enc","parameters":{"remote":"prn:encbucket-default"}})
             try:
                 dbg = json.dumps(resp.json(), indent=2)

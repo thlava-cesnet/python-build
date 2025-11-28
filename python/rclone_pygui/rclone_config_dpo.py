@@ -26,6 +26,8 @@ class MainWindow4DPO(MainWindow):
 
     def prepare_menu(self):
         super().prepare_menu()
+        from types import SimpleNamespace as nspace
+        self.menu.test_rcd = nspace(actions=nspace())
         self.menu_str[0]["actions"].insert(0,
             {"label": "&New config", "nick": "new", "shortcut": QKeySequence.New, "connect": lambda : self.centralWidget()._new_config_dialog()}
         )
@@ -37,6 +39,15 @@ class MainWindow4DPO(MainWindow):
                         "connect": lambda : self.centralWidget()._switch_widgets(self.set_MainWidget)},
                     {"label": "S&3 bucket manager", "nick": "s3",  "shortcut": QKeySequence("Ctrl+3"),
                         "connect": lambda : self.centralWidget()._switch_widgets(self.set_BotoWidget)},
+                ],
+            }
+        )
+        self.menu_str.append(
+            {
+                "label": "&Test_rcd", "nick": "test_rcd",
+                "actions": [
+                    {"label": "&Test_rcd", "nick": "test_rcd",  "shortcut": QKeySequence("Ctrl+t"),
+                        "connect": lambda : self.centralWidget().test_rcd()},
                 ],
             }
         )
@@ -280,10 +291,14 @@ class MainWidget4DPO(MainWidget):
         if ok_all: self._new_export_dialog()
         else: self.window.statusbar.showMessage("Some value is not acceptable.", 10000)
 
+    def test_rcd(self):
+        try:
+            r = self.rclone_control.test_rcd(debug=False, env=None, enc_profile=self.data.enc_profile)
+            print(f"rclone_control.test_rcd: {r=}")
+        except Exception as e:
+            WarningQD(title="Warning", text=f"{e}", icon=QMessageBox.Warning).exec()
+
     def _new_export_dialog(self):
-        r = self.rclone_control.test_rcd(debug=False, env=None)
-        print(f"rclone_control.test_rcd: {r=}")
-        return
         export_config,_ = QFileDialog.getSaveFileName(self, 'Select file name for export ...', '.', "configs (*.conf)")
         if not export_config: return
         if os.path.isfile(export_config): empty_file(export_config)

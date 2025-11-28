@@ -49,7 +49,8 @@ jobs:
           mv ./${SCRIPT_NAME}.py ./${SCRIPT_NAME}.pyw
           mv ./${SCRIPT_NAME2}.py ./${SCRIPT_NAME2}.pyw
           pyinstaller --noconsole --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME}.pyw
-          pyinstaller --noconsole --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME2}.pyw
+          #pyinstaller --noconsole --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME2}.pyw
+          pyinstaller --onefile --add-data "./images/spinner.gif:./images" ./${SCRIPT_NAME2}.pyw
         shell: bash
 
       - name: Build executable for Linux
