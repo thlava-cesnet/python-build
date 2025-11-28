@@ -209,9 +209,10 @@ class Rclone_control():
             resp = sock.post(f"http+unix://{sockfile}/config/get", auth=('user1','abcd'), json={"name":"prn_enc"})
 #            resp = sock.post("http+unix://sock/config/update", auth=('user1','abcd'), json={"name":"prn_enc","parameters":{"remote":"prn:encbucket-default"}})
             try:
-                print(json.dumps(resp.json(), indent=2))
+                dbg = json.dumps(resp.json(), indent=2)
             except json.decoder.JSONDecodeError as e:
-                print(resp.content)
+                dbg = resp.content
+            WarningQD(title="Warning", text=f"{dbg=}", icon=QMessageBox.Warning).exec()
 
             #try:
             #    resp = sock.post("http+unix://sock/core/quit", auth=('user1','abcd'), json={})
