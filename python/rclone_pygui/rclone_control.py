@@ -172,6 +172,71 @@ class Rclone_control():
         if st == 0: return out.split("\n")[0].replace('rclone ', '')
         else: raise Exception(f"Rclone not found ({err=})")
 
+    def test_rcd(self, debug=False, env=None):
+        print("=== test_rcd: start")
+        wait_timeout_s = 2
+        proc = None
+        try:
+            if debug: print(f"test_rcd: {cmd} {cmd_args=} {env=}")
+            env_copy = os.environ.copy()
+            if env != None: env_copy.update(env)
+            kwargs = {}
+            if platform.system() == "Windows":
+                si = sp.STARTUPINFO()
+                si.dwFlags |= sp.STARTF_USESHOWWINDOW
+                si.wShowWindow = 7 # SW_SHOWMINNOACTIVE
+                kwargs['creationflags'] = sp.DETACHED_PROCESS
+                kwargs['startupinfo'] = si
+                #kwargs['capture_output'] = True
+
+            sockfile = "sock"
+            cmd = self.rclone_command
+            cmd_args = ['--no-console',  '--config', self.rclone_config, 'rcd', f"--rc-addr=unix://{sockfile}", '--rc-user=user1', '--rc-pass=abcd' ]
+            proc = sp.Popen([cmd] + cmd_args,
+                stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE, text=True,
+                env=env_copy, start_new_session=True,
+                **kwargs
+            )
+
+            import time, requests, requests_unixsocket
+#            time.sleep(1)
+            for _ in range(10):
+                if os.path.exists("sock"): break
+                time.sleep(0.05)
+            sock = requests_unixsocket.Session()
+#            time.sleep(1)
+#            resp = sock.post("http+unix://sock/rc/noop", auth=('user1','abcd'), json={"name":"prn_enc"})
+            resp = sock.post(f"http+unix://{sockfile}/config/get", auth=('user1','abcd'), json={"name":"prn_enc"})
+#            resp = sock.post("http+unix://sock/config/update", auth=('user1','abcd'), json={"name":"prn_enc","parameters":{"remote":"prn:encbucket-default"}})
+            try:
+                print(json.dumps(resp.json(), indent=2))
+            except json.decoder.JSONDecodeError as e:
+                print(resp.content)
+
+            #try:
+            #    resp = sock.post("http+unix://sock/core/quit", auth=('user1','abcd'), json={})
+            #    print(f"{resp.content=}")
+            #except Exception:
+            sock.close()
+            proc.terminate()
+
+            proc.wait(timeout = wait_timeout_s)
+            out = proc.stdout.read()
+            err = proc.stderr.read()
+            if debug: print(out, err)
+            status = proc.returncode
+            return (status, err, out)
+        except sp.TimeoutExpired:
+            status, err = 255, 'timeout'
+            return (status, err, '')
+        finally:
+            print("--- test_rcd: finished")
+            if proc:
+                proc.stdin.close()
+                proc.terminate()
+                if debug: print(f"-->subprocess call finnished: {cmd} {cmd_args=}: {status=} {err=}")
+
+
     def subprocess_call(self, cmd, cmd_args, debug, env=None):
         wait_timeout_s = 10
         proc = None

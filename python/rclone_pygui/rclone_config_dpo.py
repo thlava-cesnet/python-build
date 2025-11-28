@@ -24,12 +24,22 @@ class MainWindow4DPO(MainWindow):
     def __init__(self, qapp, args):
         super().__init__(qapp, args, "rclone_config_dpo")
 
-    def create_menu(self):
-        super().create_menu()
-        self.menu.file.obj.insertAction(self.menu.file.actions.open, (new_action := QAction("&New config", self)))
-        new_action.setShortcut(QKeySequence.New)
-        self.menu.file.actions.new = new_action
-        new_action.triggered.connect(lambda : self.centralWidget()._new_config_dialog())
+    def prepare_menu(self):
+        super().prepare_menu()
+        self.menu_str[0]["actions"].insert(0,
+            {"label": "&New config", "nick": "new", "shortcut": QKeySequence.New, "connect": lambda : self.centralWidget()._new_config_dialog()}
+        )
+        self.menu_str.insert(1,
+            {
+                "label": "&ViewMode", "nick": "view",
+                "actions": [
+                    {"label": "&Rclone config", "nick": "config",  "shortcut": QKeySequence("Ctrl+r"),
+                        "connect": lambda : self.centralWidget()._switch_widgets(self.set_MainWidget)},
+                    {"label": "S&3 bucket manager", "nick": "s3",  "shortcut": QKeySequence("Ctrl+3"),
+                        "connect": lambda : self.centralWidget()._switch_widgets(self.set_BotoWidget)},
+                ],
+            }
+        )
 
     def set_MainWidget(self, data=None):
         self.menu.file.actions.new.setEnabled(True)
@@ -38,6 +48,12 @@ class MainWindow4DPO(MainWindow):
 
     def set_BotoWidget(self, data=None):
         self.menu.file.actions.new.setEnabled(False)
+        try:
+            s3 = self.s3_client(data.access_key_id, data.secret_access_key, data.endpoint)
+            self.setCentralWidget(BotoWidget(self, self.args, s3, data))
+            self.centralWidget().show()
+        except Exception as e:
+            WarningQD(title="Warning", text=f"{e}", icon=QMessageBox.Warning).exec()
         super().set_BotoWidget(data)
 
 # ====== Controller ==========
@@ -48,6 +64,8 @@ class Controller4DPO(Controller):
         menu = self.window.menu
         w = self.widget
         st.assignProperty(menu.file.actions.new, "enabled", True)
+        st.assignProperty(menu.view.actions.config, "enabled", False)
+        st.assignProperty(menu.view.actions.s3, "enabled", False)
         for it in (w.enc_box, w.gbox_export_pw, w.spinner_export_pw, w.spinner_test_bucket,):
             st.assignProperty(it, "visible", False)
         for it in (w.input_enc_bucket, w.input_export_pw, w.button_export_pw,):
@@ -56,7 +74,10 @@ class Controller4DPO(Controller):
     def prepare_CONF(self):
         super().prepare_CONF()
         st = self.states[State.CONF]
+        menu = self.window.menu
         w = self.widget
+        st.assignProperty(menu.view.actions.config, "enabled", False)
+        st.assignProperty(menu.view.actions.s3, "enabled", False)
         for it in (w.enc_box, w.gbox_export_pw, w.spinner_export_pw, w.spinner_test_bucket,):
             st.assignProperty(it, "visible", False)
         st.assignProperty(w.button_test_bucket, "icon", w._std_icon("SP_MessageBoxQuestion"))
@@ -66,7 +87,10 @@ class Controller4DPO(Controller):
     def prepare_PWOK(self):
         super().prepare_PWOK()
         st = self.states[State.PWOK]
+        menu = self.window.menu
         w = self.widget
+        st.assignProperty(menu.view.actions.config, "enabled", False)
+        st.assignProperty(menu.view.actions.s3, "enabled", True)
         for it in (w.enc_box, w.gbox_export_pw,):
             st.assignProperty(it, "visible", True)
         for it in (w.spinner_export_pw, w.spinner_test_bucket,):
@@ -77,6 +101,7 @@ class Controller4DPO(Controller):
 
     def do_work_in_PWOK(self):
         super().do_work_in_PWOK()
+        st = self.states[State.PWOK]
         if self.widget.data.s3manager_mode == 'return_selected_bucket':
             self.widget.data.enc_bucket = self.widget.data.selected_bucket
             self.widget.data.s3manager_mode = None
@@ -256,6 +281,9 @@ class MainWidget4DPO(MainWidget):
         else: self.window.statusbar.showMessage("Some value is not acceptable.", 10000)
 
     def _new_export_dialog(self):
+        r = self.rclone_control.test_rcd(debug=False, env=None)
+        print(f"rclone_control.test_rcd: {r=}")
+        return
         export_config,_ = QFileDialog.getSaveFileName(self, 'Select file name for export ...', '.', "configs (*.conf)")
         if not export_config: return
         if os.path.isfile(export_config): empty_file(export_config)

@@ -80,8 +80,6 @@ class Controller(QObject):
         menu = self.window.menu
         w = self.widget
         st.assignProperty(menu.file.actions.open, "enabled", True)
-        st.assignProperty(menu.view.actions.config, "enabled", False)
-        st.assignProperty(menu.view.actions.s3, "enabled", False)
         for it in (
             w.gbox_old_pw, w.gbox_profile_config, w.gbox_new_pw,
             w.spinner_old_pw, w.spinner_new_pw, w.spinner_test_s3
@@ -111,8 +109,6 @@ class Controller(QObject):
         menu = self.window.menu
         w = self.widget
         st.assignProperty(menu.file.actions.open, "enabled", True)
-        st.assignProperty(menu.view.actions.config, "enabled", False)
-        st.assignProperty(menu.view.actions.s3, "enabled", False)
         for it in (
             w.gbox_profile_config, w.gbox_new_pw,
             w.spinner_old_pw, w.spinner_new_pw, w.spinner_test_s3
@@ -146,8 +142,6 @@ class Controller(QObject):
         menu = self.window.menu
         w = self.widget
         st.assignProperty(menu.file.actions.open, "enabled", True)
-        st.assignProperty(menu.view.actions.config, "enabled", False)
-        st.assignProperty(menu.view.actions.s3, "enabled", True)
         for it in (w.gbox_old_pw, w.gbox_profile_config, w.gbox_new_pw):
             st.assignProperty(it, "visible", True)
         for it in (w.spinner_old_pw, w.spinner_new_pw, w.spinner_test_s3):
@@ -482,9 +476,7 @@ class MainWidget(QWidget):
             def th_ready(self):
                 if self.widget.debug: print("new_pw_wt_result:", self.widget.status)
                 if self.widget.status:
-                    if ConfirmQD(self.widget, "Finished, saved - continue to bucket operations?").exec():
-                        self.widget.ctrl.goPWOKtoBOTO.emit()
-                    else:
+                    if ConfirmQD(self.widget, "Finished, saved - exit?").exec():
                         self.widget.ctrl.goPWOKtoFIN.emit()
             def th_error(self, errmsg):
                 WarningQD(title="Warning", text=errmsg, icon=QMessageBox.Warning).exec()

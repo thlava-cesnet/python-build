@@ -15,7 +15,6 @@ import boto3
 from .utils import WarningQD
 from .version import __version__
 from .rclone_control import Rclone_control
-from .boto_widget import BotoWidget
 from .rclone_pygui_lib import MainWidget
 
 class MainWindow(QMainWindow):
@@ -27,7 +26,8 @@ class MainWindow(QMainWindow):
         self.debug = args.debug
         self.min_pw_length = 3
         self.bdir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-        self.create_menu()
+        self.prepare_menu()
+        self.complete_menu()
         self.create_stausbar()
         self.rclone_control = Rclone_control(args.debug, args.rclone_command)
         self.set_MainWidget()
@@ -38,42 +38,43 @@ class MainWindow(QMainWindow):
     def s3_client(self, access_key_id, secret_access_key, endpoint, region_name='ceph'):
         return boto3.client(service_name="s3", aws_access_key_id = access_key_id, aws_secret_access_key = secret_access_key, endpoint_url = 'https://'+endpoint, region_name=region_name)
 
-    def create_menu(self):
+    def prepare_menu(self):
         self.menu_bar = self.menuBar()
-        self.menu = nspace(file=nspace(actions=nspace()), view=nspace(actions=nspace()))
-        # file menu:
-        file_menu = self.menu.file.obj = self.menu_bar.addMenu('&File')
-        file_menu.setMinimumWidth(200)
-        file_menu.addAction((open_action := QAction("&Open config", self)))
-        open_action.setShortcut(QKeySequence.Open)
-        self.menu.file.actions.open = open_action
-        open_action.triggered.connect(lambda : self.centralWidget()._open_config_dialog())
-        file_menu.addAction((exit_action := QAction("E&xit", self)))
-        #exit_action.setShortcut(QKeySequence("Alt+x"))
-        exit_action.setShortcut(QKeySequence.Quit)
-        exit_action.triggered.connect(lambda : self.centralWidget().quit())
-        # view menu:
-        view_menu = self.menu_bar.addMenu('&ViewMode')
-        view_menu.setMinimumWidth(200)
-        view_menu.addAction((config_action := QAction("Rclone config", self, disabled=True)))
-        config_action.setShortcut(QKeySequence("Ctrl+r"))
-        view_menu.addAction((s3_action := QAction("S&3 bucket manager", self, disabled=True)))
-        s3_action.setShortcut(QKeySequence("Ctrl+3"))
-        #s3_action.setStatusTip("S3 bucket manager")
-        s3_action.setToolTip("S3 bucket manager")
-        config_action.triggered.connect(lambda : self.centralWidget()._switch_widgets(self.set_MainWidget) )
-        s3_action.triggered.connect(lambda : self.centralWidget()._switch_widgets(self.set_BotoWidget) )
-        self.menu.view.actions.config = config_action
-        self.menu.view.actions.s3 = s3_action
-        # help menu:
-        help_menu = self.menu_bar.addMenu('&Help')
-        help_menu.addAction((about_action := QAction("&About", self)))
+        self.menu = nspace(file=nspace(actions=nspace()), view=nspace(actions=nspace()), help=nspace(actions=nspace()))
         about_text = f"""
         S3 {self.variant} (rclone pygui) v{__version__}
         (c) 2025 CESNET
         {platform.system()}; {platform.machine()}
         """
-        about_action.triggered.connect(lambda : WarningQD(text=about_text).exec())
+        self.menu_str = [
+            {
+                "label": "&File", "nick": "file",
+                "actions": [
+                    {"label": "&Open config", "nick": "open",  "shortcut": QKeySequence.Open, "connect": lambda : self.centralWidget()._open_config_dialog()},
+                    {"label": "&Exit", "nick": "exit",  "shortcut": QKeySequence.Quit, "connect": lambda : self.centralWidget().quit()},
+                ],
+            },
+            {
+                "label": "&Help", "nick": "help",
+                "actions": [
+                    {"label": "&About", "nick": "about",  "shortcut": None, "connect": lambda : WarningQD(text=about_text).exec()},
+                ],
+            },
+        ]
+
+    def complete_menu(self):
+        for mitem in self.menu_str:
+            menu = self.menu_bar.addMenu(mitem["label"])
+            menu.setMinimumWidth(200)
+            for act in mitem["actions"]:
+                menu.addAction((action := QAction(act["label"], self)))
+                if act["shortcut"] != None: action.setShortcut(act["shortcut"])
+                #action.setStatusTip("S3 bucket manager")
+                #action.setToolTip("S3 bucket manager")
+                action.triggered.connect(act["connect"])
+                #act["action"] = action
+                setattr(getattr(getattr(self.menu, mitem["nick"]), "actions"), act["nick"], action)
+#        print(self.menu)
 
     def create_stausbar(self):
         self.statusbar = self.statusBar()
@@ -89,12 +90,7 @@ class MainWindow(QMainWindow):
         self.centralWidget().show()
 
     def set_BotoWidget(self, data=None):
-        try:
-            s3 = self.s3_client(data.access_key_id, data.secret_access_key, data.endpoint)
-            self.setCentralWidget(BotoWidget(self, self.args, s3, data))
-            self.centralWidget().show()
-        except Exception as e:
-            WarningQD(title="Warning", text=f"{e}", icon=QMessageBox.Warning).exec()
+        pass
 
     def _install_shortcuts(self, widget):
         QShortcut(QKeySequence("Alt+x"), widget, lambda : self.centralWidget().quit())

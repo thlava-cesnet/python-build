@@ -16,6 +16,9 @@ class BotoWidget(QWidget):
         self.s3 = s3
         self.buckets = []
         self.bucket = None
+        self.bpolicy = None
+        self.tenant = None
+        self.owner = None
         self.prepareGUI()
         self.window._install_shortcuts(self)
         if self.debug: print(f"BotoWidget: Profile: {data.profile_name}")
@@ -42,9 +45,14 @@ class BotoWidget(QWidget):
         button_create_bucket = QPushButton("Create bucket")
         button_create_bucket.setMaximumWidth(220)
         button_create_bucket.clicked.connect(self.create_bucket)
-        button_delete_bucket = QPushButton("Delete bucket")
-        button_delete_bucket.setMaximumWidth(220)
-        button_delete_bucket.clicked.connect(self.delete_bucket)
+        self.button_bpolicy = QPushButton("Bucket sharing")
+        self.button_bpolicy.setMaximumWidth(220)
+        self.button_bpolicy.setEnabled(False)
+        self.button_bpolicy.clicked.connect(self.process_bpolicy)
+        self.button_delete_bucket = QPushButton("Delete bucket")
+        self.button_delete_bucket.setMaximumWidth(220)
+        self.button_delete_bucket.setEnabled(False)
+        self.button_delete_bucket.clicked.connect(self.delete_bucket)
         #button_exit = QPushButton("Exit")
         button_exit = QPushButton("Return")
         button_exit.setMaximumWidth(220)
@@ -54,14 +62,22 @@ class BotoWidget(QWidget):
         button_select_bucket.setMaximumWidth(220)
         button_select_bucket.clicked.connect(self.select_bucket)
         layout = QFormLayout()
-        for l,r in ((self.input_new_bucket,button_create_bucket), (self.label_bucket,button_delete_bucket),(self.label_buckets,self.spinner_buckets), (self.combo_buckets,None), (None,button_select_bucket), (None,button_exit)):
+        for l,r in (
+            (self.input_new_bucket, button_create_bucket),
+            (self.label_bucket, self.button_bpolicy),
+            (self.label_bucket, self.button_delete_bucket),
+            (self.label_buckets, self.spinner_buckets),
+            (self.combo_buckets, None),
+            (None, button_select_bucket),
+            (None, button_exit)
+        ):
             if self.data.s3manager_mode=='select_bucket':
-                if r!=button_exit: layout.addRow(l,r)
+                if r!=button_exit: layout.addRow(l, r)
             else:
-                if r!=button_select_bucket: layout.addRow(l,r)
+                if r!=button_select_bucket: layout.addRow(l, r)
         gbox.setLayout(layout)
         win_layout = QVBoxLayout()
-        for gbox in (gbox,):
+        for gbox in (gbox, ):
             win_layout.addWidget(gbox)
         self.setLayout(win_layout)
         self.window.menu.file.actions.open.setEnabled(False)
@@ -73,6 +89,9 @@ class BotoWidget(QWidget):
             self.bucket = self.combo_buckets.currentItem().text()
         else:
             self.bucket = bucket
+        self.bpolicy = None
+        self.button_bpolicy.setEnabled(bucket != None)
+        self.button_delete_bucket.setEnabled(bucket != None)
         if self.debug: print(f"itemText: {self.bucket}")
         self.label_bucket.setText(f"Selected bucket: {self.bucket}")
 
@@ -84,6 +103,7 @@ class BotoWidget(QWidget):
                 r =  self.widget.s3.list_buckets()
                 self.widget.buckets = [b['Name'] for b in r['Buckets']]
                 if self.widget.debug: print(json.dumps(r['Buckets'], indent=2, sort_keys=True, default=str))
+                self.widget.tenant, self.widget.owner = r['Owner']['ID'].split('$')
             def th_finally(self):
                 self.widget.spinner_buckets.hide()
             def th_ready(self):
@@ -95,17 +115,77 @@ class BotoWidget(QWidget):
                 WarningQD(title="Warning", text=errmsg, icon=QMessageBox.Warning).exec()
         XThreaded(self)
 
+    def get_bpolicy(self):
+        class XThreaded(Threaded):
+            def th_init(self):
+                self.widget.spinner_buckets.show()
+            def th_run(self):
+                self.r =  self.widget.s3.get_bucket_policy(Bucket=self.widget.bucket)
+            def th_finally(self):
+                self.widget.spinner_buckets.hide()
+            def th_ready(self):
+                if self.widget.debug: print("get_bpolicy thread ready")
+                self.widget.bpolicy = json.loads(self.r['Policy'])
+                if self.widget.debug: print(json.dumps(self.widget.bpolicy, indent=2, sort_keys=True, default=str))
+            def th_error(self, errmsg):
+                WarningQD(title="Warning", text=errmsg, icon=QMessageBox.Warning).exec()
+        XThreaded(self)
+
+    def put_bpolicy(self):
+        class XThreaded(Threaded):
+            def th_init(self):
+                if self.widget.debug: print("put_bpolicy init")
+                self.widget.spinner_buckets.show()
+            def th_run(self):
+                policy = f"""
+{{
+  "Version": "2012-10-17",
+  "Statement": [
+    {{
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Effect": "Allow",
+      "Principal": {{
+        "AWS": [
+          "{self.widget.tenant}"
+        ]
+      }},
+      "Resource": [
+        "arn:aws:s3:::{self.widget.bucket}",
+        "arn:aws:s3:::{self.widget.bucket}/*"
+      ]
+    }}
+  ]
+}}
+                """
+                print(policy)
+                self.r =  self.widget.s3.put_bucket_policy(Bucket=self.widget.bucket, Policy=policy
+                # ExpectedBucketOwner=
+                )
+            def th_finally(self):
+                self.widget.spinner_buckets.hide()
+            def th_ready(self):
+                if self.widget.debug: print("put_bpolicy thread ready")
+                if self.widget.debug: print(json.dumps(self.r, indent=2, sort_keys=True, default=str))
+            def th_error(self, errmsg):
+                WarningQD(title="Warning", text=errmsg, icon=QMessageBox.Warning).exec()
+        XThreaded(self)
+
     def create_bucket(self):
         class XThreaded(Threaded):
             def th_init(self):
                 self.widget.new_bucket = self.widget.input_new_bucket.text()
                 if not isinstance(self.widget.new_bucket, str) or self.widget.new_bucket=="":
                     if self.widget.debug: print(self.widget.new_bucket, type(self.widget.new_bucket))
-                    WarningQD(title="Warning", text=f"Wrong bucket name ({self.widget.new_bucket})", icon=QMessageBox.Warning).exec()
+                    WarningQD(title="Warning", text=f"Wrong bucket name \"{self.widget.new_bucket}\"", icon=QMessageBox.Warning).exec()
                     return False
                 if self.widget.debug: print(f"create_bucket \"{self.widget.new_bucket}\"")
                 self.widget.spinner_buckets.show()
-                self.widget.label_buckets.setText("Creating new bucket ...")
+                self.widget.window.statusbar.showMessage(f"Creating new bucket ...", 2000)
             def th_run(self):
                 r =  self.widget.s3.create_bucket(Bucket=self.widget.new_bucket)
                 if self.widget.debug: print(r)
@@ -122,18 +202,22 @@ class BotoWidget(QWidget):
                 WarningQD(title="Warning", text=errmsg, icon=QMessageBox.Warning).exec()
         XThreaded(self)
 
+    def process_bpolicy(self):
+        self.put_bpolicy()
+        self.get_bpolicy()
+
     def delete_bucket(self):
         class XThreaded(Threaded):
             def th_init(self):
                 if not isinstance(self.widget.bucket, str):
-                    WarningQD(title="Warning", text="Wrong bucket", icon=QMessageBox.Warning).exec()
+                    self.widget.window.statusbar.showMessage(f"Bucket not selected", 2000)
                     return False
                 if not ConfirmQD(self.widget, f"Really delete bucket \"{self.widget.bucket}\"").exec():
                     if self.widget.debug: print("Cancelled...")
                     return False
                 if self.widget.debug: print(f"delete_bucket \"{self.widget.bucket}\"")
                 self.widget.spinner_buckets.show()
-                self.widget.label_buckets.setText("Deleting bucket ...")
+                self.widget.window.statusbar.showMessage(f"Deleting bucket ...", 2000)
             def th_run(self):
                 r =  self.widget.s3.delete_bucket(Bucket=self.widget.bucket)
                 if self.widget.debug: print(r)

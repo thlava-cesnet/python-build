@@ -8,7 +8,7 @@
 
 """ rclone config manager for users """
 
-import sys, os
+import sys, os, json
 #from PySide6.QtWidgets import QWidget, QApplication, QGroupBox, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QFormLayout, QStyle, QMainWindow, QFileDialog, QMessageBox
 from PySide6.QtWidgets import QApplication, QMessageBox
 from argparse import ArgumentParser
