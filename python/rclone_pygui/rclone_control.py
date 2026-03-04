@@ -19,8 +19,7 @@ class Rclone_control():
         if self.debug: print("Rclone_control init")
         self.rclone_version = None
         self.rclone_config = None
-        self.rclone_pygui_command = rclone_pygui_command or sys.argv[0]
-        if self.debug: WarningQD(title="Warning", text=f"DBG:{self.rclone_pygui_command}", icon=QMessageBox.Warning).exec()
+        self.rclone_pygui_command = rclone_pygui_command or os.path.realpath(sys.argv[0])
         if not (rclone := shutil.which(rclone_command)):
             WarningQD(title="Warning", text="Rclone command not found.", icon=QMessageBox.Warning).exec()
             fatal_err(f"Rclone command \"{rclone_command}\" not found.")
