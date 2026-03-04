@@ -57,7 +57,7 @@ class Rclone_control():
             self.rclone_command, [
                 '--no-console',
                 '--config', self.rclone_config, 'config', 'encryption', subcomm, '--ask-password=false',
-                '--password-command', f"{self.rclone_pygui_command} --password_command"
+                '--password-command', f"\"{self.rclone_pygui_command}\" --password_command"
             ],
             self.debug,
             { 'PYGUI_RCLONE_OLDPW': old_pw, 'PYGUI_RCLONE_NEWPW': new_pw }
