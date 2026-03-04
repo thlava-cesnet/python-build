@@ -16,6 +16,7 @@ from argparse import ArgumentParser
 from .utils import WarningQD
 from .rclone_pygui_window import MainWindow
 from .rclone_pygui_lib import MainWidget, Controller
+from .version import __version__
 
 # ====== MainWindow ==========
 class MainWindow4User(MainWindow):
@@ -60,6 +61,7 @@ def parse_args(argv):
     p.add_argument("-c", "--rclone_config", help="rclone config file (default: %(default)s)", default=None)
     p.add_argument("-r", "--rclone_command", help="rclone command, could be full path to command (default: %(default)s)", default='rclone')
     p.add_argument("-p", "--password_command", action="store_true", help="run as rclone password command, for internal use")
+    p.add_argument("-v", "--version", action="version", help="print version and exit", version=f"%(prog)s {__version__}")
     return p.parse_args(argv)
 
 def main(argv = None):
