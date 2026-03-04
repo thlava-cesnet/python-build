@@ -20,6 +20,7 @@ class Rclone_control():
         self.rclone_version = None
         self.rclone_config = None
         self.rclone_pygui_command = rclone_pygui_command or sys.argv[0]
+        if self.debug: WarningQD(title="Warning", text=f"DBG:{self.rclone_pygui_command}", icon=QMessageBox.Warning).exec()
         if not (rclone := shutil.which(rclone_command)):
             WarningQD(title="Warning", text="Rclone command not found.", icon=QMessageBox.Warning).exec()
             fatal_err(f"Rclone command \"{rclone_command}\" not found.")
@@ -53,7 +54,6 @@ class Rclone_control():
     def rclone_change_config_pw(self, old_pw, new_pw):
         if self.debug: print("call rclone config encryption set")
         subcomm = 'set' if new_pw!='' else 'remove'
-        if self.debug: WarningQD(title="Warning", text=f"DBG:{self.rclone_pygui_command}", icon=QMessageBox.Warning).exec()
         (st, err, out) = self.subprocess_call(
             self.rclone_command, [
                 '--no-console',
